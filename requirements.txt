@@ -1,0 +1,33 @@
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+pydantic>=2.0
+pydantic-settings>=2.0
+sqlalchemy>=2.0
+minio>=7.0
+requests>=2.25
+python-multipart>=0.0.5
+
+# Database drivers (choose one or more as needed)
+psycopg2-binary # For PostgreSQL
+# mysqlclient
+# asyncpg
+# databases[sqlite]
+
+# Celery and Redis client
+celery>=5.3.0
+redis>=5.0.0
+
+# Vector Database client
+pymilvus~=2.5.0 # For Milvus v2.5.x
+
+# HTTP client for internal requests
+httpx>=0.20.0
+
+# Rate limiting
+slowapi
+# importlib_resources is needed for 'limits' (a slowapi dependency) on Python < 3.9.
+# If using Python 3.9+, importlib.resources from the standard library is used.
+# Assuming the new interpreter/environment will be Python 3.9+ or will have this handled.
+
+# eventlet # Optional: for Celery worker concurrency with -P eventlet
+# gevent   # Optional: for Celery worker concurrency with -P gevent
