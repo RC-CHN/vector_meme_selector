@@ -25,7 +25,7 @@
 ## 使用 `docker-compose.deploy.yml` 一键部署
 
 1.  **环境准备**: 安装 Docker 和 Docker Compose。
-2.  **配置环境变量**: 复制 `.env.example` 为 `.env` 并修改其中的配置项（数据库、MinIO、LLM/Embedding API密钥、端口等）。
+2.  **配置环境变量**: 复制 `.env.example` 为 `.env` 并修改其中的配置项（数据库、MinIO、LLM/Embedding API密钥、端口等），注意请修改dockerfile中的环境变量代理。
 3.  **启动服务**:
     ```bash
     docker-compose -f docker-compose.deploy.yml up --build -d
