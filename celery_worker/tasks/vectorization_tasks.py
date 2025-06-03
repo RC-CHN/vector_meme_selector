@@ -332,6 +332,39 @@ def schedule_pending_vectorizations_task():
         print(f"{task_name_log} Found {len(pending_images)} image(s) for vectorization retry (limit {BATCH_LIMIT_VECTORIZATION_SCHEDULER}).")
         
         for image_meta in pending_images:
+            # Check for active (PENDING or STARTED) vectorization tasks for this image_meta.id
+            active_vectorization_task = db.query(TaskLog).filter(
+                TaskLog.image_metadata_id == image_meta.id,
+                TaskLog.task_name == vectorize_image_and_store_task.name, # Check for the specific vectorization task
+                TaskLog.status.in_([TaskStatusEnum.PENDING, TaskStatusEnum.STARTED])
+            ).first()
+
+            if active_vectorization_task:
+                print(f"{task_name_log} Skipping vectorization for metadata_id {image_meta.id}: Active vectorization task {active_vectorization_task.task_id} (Status: {active_vectorization_task.status.value}) found.")
+                continue
+
+            # Check for at least one historical FAILED vectorization task for this image_meta.id
+            failed_vectorization_task_history = db.query(TaskLog).filter(
+                TaskLog.image_metadata_id == image_meta.id,
+                TaskLog.task_name == vectorize_image_and_store_task.name, # Check for the specific vectorization task
+                TaskLog.status == TaskStatusEnum.FAILURE
+            ).first()
+
+            if not failed_vectorization_task_history:
+                # This condition implies that if is_vectorized is False, but there's no FAILED history,
+                # it might be an initial vectorization that hasn't run or logged failure yet.
+                # The original logic would pick this up if it's just `is_vectorized == False`.
+                # To strictly adhere to "retry only if previously failed", this check is added.
+                # However, for vectorization, it's often dispatched once after successful tagging.
+                # If the initial dispatch itself failed to create a TaskLog or Celery task,
+                # this Beat task might be the only way to trigger it.
+                # For now, let's keep the strict check as discussed for tagging.
+                # If we want to ensure vectorization happens even if the first attempt had issues before logging FAILURE,
+                # this condition might need adjustment or a different Beat task for "initial but missing" vectorizations.
+                print(f"{task_name_log} Skipping vectorization for metadata_id {image_meta.id}: No prior FAILED vectorization task log found.")
+                continue
+
+            # If passed both checks, proceed with retry
             custom_task_id = uuid.uuid4().hex
             task_log_created = False
             celery_task_submitted = False

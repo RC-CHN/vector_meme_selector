@@ -321,6 +321,29 @@ def retry_failed_tagging_beat_task():
         print(f"{task_name_log} Found {len(records_to_retry)} image(s) for tagging retry (limit {TAGGING_RETRY_BATCH_SIZE_PER_BEAT_RUN}).")
         
         for metadata_item in records_to_retry:
+            # Check for active (PENDING or STARTED) tagging tasks for this metadata_id
+            active_tagging_task = db.query(TaskLog).filter(
+                TaskLog.image_metadata_id == metadata_item.id,
+                TaskLog.task_name == generate_llm_tags_task.name, # Check for the specific tagging task
+                TaskLog.status.in_([TaskStatusEnum.PENDING, TaskStatusEnum.STARTED])
+            ).first()
+
+            if active_tagging_task:
+                print(f"{task_name_log} Skipping retry for metadata_id {metadata_item.id}: Active tagging task {active_tagging_task.task_id} (Status: {active_tagging_task.status.value}) found.")
+                continue
+
+            # Check for at least one historical FAILED tagging task for this metadata_id
+            failed_tagging_task_history = db.query(TaskLog).filter(
+                TaskLog.image_metadata_id == metadata_item.id,
+                TaskLog.task_name == generate_llm_tags_task.name, # Check for the specific tagging task
+                TaskLog.status == TaskStatusEnum.FAILURE
+            ).first()
+
+            if not failed_tagging_task_history:
+                print(f"{task_name_log} Skipping retry for metadata_id {metadata_item.id}: No prior FAILED tagging task log found.")
+                continue
+            
+            # If passed both checks, proceed with retry
             custom_task_id = uuid.uuid4().hex
             task_log_created = False
             celery_task_submitted = False

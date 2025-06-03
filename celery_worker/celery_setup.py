@@ -16,6 +16,7 @@ celery_app = Celery(
     include=[
         'celery_worker.tasks.image_tasks',
         'celery_worker.tasks.vectorization_tasks', # Added vectorization tasks
+        'celery_worker.tasks.system_tasks', # Added system tasks for timeout monitoring
     ]
 )
 
@@ -61,12 +62,17 @@ celery_app.conf.task_routes = None # Clear any existing static routes or comment
 celery_app.conf.beat_schedule = {
     'schedule-pending-vectorizations-regularly': { # Renamed for clarity
         'task': 'tasks.image.schedule_pending_vectorizations',
-        'schedule': crontab(minute='*/15'),  # Example: every 15 minutes
+        'schedule': crontab(minute=f'*/{settings.BEAT_SCHEDULE_PENDING_VECTORIZATIONS_MINUTES}'),
         'options': {'queue': 'beat_scheduler_tasks_queue'} # Route this Beat task
     },
     'retry-failed-llm-tags-regularly': { # Renamed for clarity
         'task': 'tasks.image.retry_failed_tagging_beat',
-        'schedule': crontab(minute='*/30'),  # Example: every 30 minutes
+        'schedule': crontab(minute=f'*/{settings.BEAT_SCHEDULE_RETRY_TAGGING_MINUTES}'),
+        'options': {'queue': 'beat_scheduler_tasks_queue'} # Route this Beat task
+    },
+    'monitor-task-timeouts-regularly': {
+        'task': 'tasks.system.monitor_task_timeouts_beat',
+        'schedule': crontab(minute=f'*/{settings.BEAT_SCHEDULE_MONITOR_TIMEOUTS_MINUTES}'),
         'options': {'queue': 'beat_scheduler_tasks_queue'} # Route this Beat task
     },
 }

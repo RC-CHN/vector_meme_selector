@@ -83,6 +83,8 @@ JSON对象应包含一个名为 "semantic_tags" 的键，其值为一个字符�
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
     CELERY_TASK_POST_DELAY_SECONDS: int = 0
+    CELERY_TASK_PENDING_TIMEOUT_SECONDS: int = 6 * 60 * 60  # Default: 6 hours
+    CELERY_TASK_STARTED_TIMEOUT_SECONDS: int = 1 * 60 * 60  # Default: 1 hour
 
     # Milvus Configuration
     MILVUS_HOST: str = "localhost"
@@ -101,6 +103,11 @@ JSON对象应包含一个名为 "semantic_tags" 的键，其值为一个字符�
     # Beat task for retrying failed LLM tagging
     MAX_LLM_TAGGING_BEAT_RETRIES: int = 2 # Max times Beat task will retry a single image's tagging
     TAGGING_RETRY_BATCH_SIZE_PER_BEAT_RUN: int = 50 # How many failed items Beat task processes in one run
+
+    # Celery Beat Schedules Configuration (intervals in minutes)
+    BEAT_SCHEDULE_PENDING_VECTORIZATIONS_MINUTES: int = 15 # Default: every 15 minutes
+    BEAT_SCHEDULE_RETRY_TAGGING_MINUTES: int = 30         # Default: every 30 minutes
+    BEAT_SCHEDULE_MONITOR_TIMEOUTS_MINUTES: int = 15      # Default: every 15 minutes
 
     # API Preshared Authentication Token
     API_PRESHARED_AUTH_TOKEN: str = "YOUR_SECRET_TOKEN_NEEDS_TO_BE_SET_IN_ENV" # IMPORTANT: Override in .env with a strong secret
